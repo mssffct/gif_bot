@@ -1,4 +1,5 @@
 python-dotenv
 minio
+pytest
 isort
 flake8

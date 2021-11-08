@@ -38,23 +38,25 @@ class MinioHandler:
 
     def save(self, obj, uid: str, pic_format: str):
         if pic_format == 'gif':
-            self.put_object(
-                bucket_name='general',
-                obj=obj,
-                pic_format=pic_format,
-                obj_name=uid
-            )
+            obj_name = uid + '_' + obj.name
+
         else:
-            self.put_object(
-                bucket_name=uid,
-                obj=obj,
-                pic_format=pic_format,
-                obj_name=obj.name
-            )
+            obj_name = obj.name
+        self.put_object(
+            bucket_name='general',
+            obj=obj,
+            pic_format=pic_format,
+            obj_name=obj_name
+        )
 
     def get_gifs(self, uid: str):
+        """
+        Yields gifs from general bucket with exact uid
+        :param uid:
+        :return:
+        """
         all_gifs = self.client.list_objects('general', recursive=True)
         for item in all_gifs:
-            if item.object_name == uid:
+            if item.object_name.startswith(uid):
                 yield self.client.get_object('general', item)
             pass
