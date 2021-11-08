@@ -1,1 +1,4 @@
 python-dotenv
+minio
+isort
+flake8
