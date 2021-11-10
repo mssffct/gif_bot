@@ -1,5 +1,6 @@
 python-dotenv
 minio
+pytelegrambotapi
 pytest
 isort
 flake8
