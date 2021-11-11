@@ -3,7 +3,7 @@ import logging
 import telebot
 from telebot import types
 from pprint import pprint
-from pil_handler import PictureWithText
+from pil_handler import PictureWithText, GifPicture
 
 from dotenv import load_dotenv
 
@@ -33,8 +33,8 @@ def start_command(message):
     bot.send_message(
         message.chat.id,
         f'Hello, {message.from_user.first_name}!\n' +
-        'I\'m here to help you to add your text to your picture\n' +
-        'or to create your own gif picture! \n' +
+        'I\'m here to help you with adding your text to your picture\n' +
+        'or creating your own gif picture! \n' +
         'To add your text to the picture press "Add text"\n' +
         'To create gif press "Create gif"',
         reply_markup=keyboard
@@ -50,39 +50,51 @@ def choose_option(call):
         )
         bot.register_next_step_handler(call.message, wait_for_text)
     elif call.data == 'gif':
+        frames = []
         bot.send_message(
             call.message.chat.id,
             'Add more than three pictures '
         )
-        bot.register_next_step_handler(call.message, create_gif)
+        bot.register_next_step_handler(call.message, create_gif, frames)
 
 
 @bot.message_handler(content_types=['text'])
 def wait_for_text(message):
     try:
         text = str(message.text)
-        # keyboard = types.ReplyKeyboardMarkup(row_width=2)
-        # lobster_button = types.KeyboardButton(text='lobster')
-        # comfortaa_button = types.KeyboardButton(text='comfortaa')
-        # keyboard.add(lobster_button, comfortaa_button)
-        # bot.send_message(
-        #     message.from_user.id,
-        #     'Now it\'s time to choose the font you like ',
-        #     reply_markup=keyboard
-        # )
+        keyboard = types.ReplyKeyboardMarkup(row_width=2)
+        lobster_button = types.KeyboardButton(text='Lobster')
+        comfortaa_button = types.KeyboardButton(text='Comfortaa')
+        keyboard.add(lobster_button, comfortaa_button)
         bot.send_message(
-            message.from_user.id,
-            f'And now, add picture you want '
+            message.chat.id,
+            'Ok! It\'s time to choose the font you like ',
+            reply_markup=keyboard
         )
-        bot.register_next_step_handler(message, create_picture, text)
+        bot.register_next_step_handler(message, choose_font, text)
     except TypeError:
         bot.send_message(
             message.from_user.id,
             'Please enter correct text'
         )
+        bot.register_next_step_handler(message, wait_for_text)
 
 
-def create_picture(message, text: str):
+def choose_font(message, text):
+    font = ''
+    if message.text == 'Lobster':
+        font = 'Lobster-Regular.ttf'
+    elif message.text == 'Comfortaa':
+        font = 'Comfortaa-Medium.ttf'
+    bot.send_message(
+        message.from_user.id,
+        f'And now, add picture you want ',
+        reply_markup=types.ReplyKeyboardRemove()
+    )
+    bot.register_next_step_handler(message, create_picture, text, font)
+
+
+def create_picture(message, text: str, font: str):
     try:
         if message.content_type == 'photo':
             picture_info = bot.get_file(message.photo[-1].file_id)
@@ -91,8 +103,7 @@ def create_picture(message, text: str):
                 f'Please, wait...'
             )
             picture_file = bot.download_file(picture_info.file_path)
-            print(type(picture_file))
-            changed_picture = PictureWithText(picture_file, text)
+            changed_picture = PictureWithText(picture_file, text, font).changed
             bot.send_photo(
                 message.from_user.id,
                 changed_picture
@@ -105,12 +116,24 @@ def create_picture(message, text: str):
         bot.register_next_step_handler(message, create_picture, text)
 
 
-def create_gif(message):
+def create_gif(message, frames: list):
+    print("func called")
+    pprint(vars(message))
     try:
         if message.content_type == 'photo':
             pass
+
     except TypeError:
         pass
+    print(frames)
+
+@bot.message_handler(content_types=['photo'])
+def photo(message):
+    fileID = message.photo[-1].file_id
+    file_info = bot.get_file(fileID)
+    downloaded_file = bot.download_file(file_info.file_path)
+
+    return downloaded_file
 
 
 if __name__ == '__main__':
