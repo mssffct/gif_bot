@@ -3,6 +3,7 @@ import logging
 import telebot
 from telebot import types
 from pprint import pprint
+from pil_handler import PictureWithText
 
 from dotenv import load_dotenv
 
@@ -51,7 +52,7 @@ def choose_option(call):
     elif call.data == 'gif':
         bot.send_message(
             call.message.chat.id,
-            'Add three or more pictures '
+            'Add more than three pictures '
         )
         bot.register_next_step_handler(call.message, create_gif)
 
@@ -60,15 +61,20 @@ def choose_option(call):
 def wait_for_text(message):
     try:
         text = str(message.text)
-        keyboard = types.InlineKeyboardMarkup(row_width=2)
-        lobster_button = types.InlineKeyboardButton(text='lobster', callback_data='lobster')
-        comfortaa_button = types.InlineKeyboardButton(text='comfortaa', callback_data='comfortaa')
-        keyboard.add(lobster_button, comfortaa_button)
+        # keyboard = types.ReplyKeyboardMarkup(row_width=2)
+        # lobster_button = types.KeyboardButton(text='lobster')
+        # comfortaa_button = types.KeyboardButton(text='comfortaa')
+        # keyboard.add(lobster_button, comfortaa_button)
+        # bot.send_message(
+        #     message.from_user.id,
+        #     'Now it\'s time to choose the font you like ',
+        #     reply_markup=keyboard
+        # )
         bot.send_message(
             message.from_user.id,
-            'Now it\'s time to choose the font you like ',
-            reply_markup=keyboard
+            f'And now, add picture you want '
         )
+        bot.register_next_step_handler(message, create_picture, text)
     except TypeError:
         bot.send_message(
             message.from_user.id,
@@ -76,35 +82,27 @@ def wait_for_text(message):
         )
 
 
-def choose_font(message):
-    if message.text == 'Lobster':
-        font = 'Lobster'
-    elif message.text == 'Comfortaa':
-        font = 'Comfortaa'
-    bot.send_message(
-        message.from_user.id,
-        f'And now, add picture you want '
-    )
-    bot.register_next_step_handler(message, create_picture)
-
-
-def create_picture(message):
+def create_picture(message, text: str):
     try:
         if message.content_type == 'photo':
-            picture = message.photo[-1].file_id
+            picture_info = bot.get_file(message.photo[-1].file_id)
             bot.send_message(
                 message.from_user.id,
-                'Please, wait...'
+                f'Please, wait...'
             )
+            picture_file = bot.download_file(picture_info.file_path)
+            print(type(picture_file))
+            changed_picture = PictureWithText(picture_file, text)
             bot.send_photo(
                 message.from_user.id,
-                picture
+                changed_picture
             )
     except TypeError:
         bot.send_message(
             message.from_user.id,
             'Please add correct image'
         )
+        bot.register_next_step_handler(message, create_picture, text)
 
 
 def create_gif(message):
@@ -117,20 +115,3 @@ def create_gif(message):
 
 if __name__ == '__main__':
     bot.infinity_polling()
-
-
-
-
-
-
-# class LongPolling:
-#     def __init__(self, bot_name, token):
-#         self.bot_name = bot_name
-#         self.token = token
-#         self.response = url + self.bot_name + self.token + '/getUpdates'
-#         self.get_updates()
-#
-#     def get_updates(self):
-#         while True:
-#             time.sleep(1)
-#             return http.request('GET', self.response)
