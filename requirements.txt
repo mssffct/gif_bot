@@ -1,1 +1,7 @@
 python-dotenv
+minio
+pytelegrambotapi
+Pillow
+pytest
+isort
+flake8
