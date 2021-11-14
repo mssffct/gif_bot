@@ -1,7 +1,8 @@
 import os
 
 from minio import Minio
-from minio.error import InvalidResponseError
+
+temp_path = os.path.join('..', 'temp')
 
 
 class MinioHandler:
@@ -13,41 +14,38 @@ class MinioHandler:
     @staticmethod
     def get_minio_client(__access, __secret):
         return Minio(
-            '',
+            'localhost:9000',
             access_key=__access,
-            secret_key=__secret
+            secret_key=__secret,
+            region='ru',
+            secure=False
         )
 
-    def put_object(
-            self, bucket_name: str, obj: str, pic_format: str, obj_name: str
+    def put_in_bucket(
+            self, bucket_name: str, obj_name: str
     ):
         if not self.client.bucket_exists(bucket_name):
             self.client.make_bucket(bucket_name)
-        try:
-            with open(obj, 'rb') as file:
-                statdata = os.stat(obj)
-                self.client.put_object(
-                    bucket_name,
-                    obj_name,
-                    file,
-                    statdata.st_size,
-                    content_type=pic_format
-                )
-        except InvalidResponseError as ident:
-            raise
-
-    def save(self, obj, uid: str, pic_format: str):
-        if pic_format == 'gif':
-            obj_name = uid + '_' + obj.name
-
-        else:
-            obj_name = obj.name
-        self.put_object(
-            bucket_name='general',
-            obj=obj,
-            pic_format=pic_format,
-            obj_name=obj_name
+        self.client.fput_object(
+            bucket_name,
+            f'{obj_name}',
+            file_path=f'{temp_path}\\{obj_name}',
+            content_type='application/csv',
         )
+
+    def save(self, obj_name: str, uid: str, pic_format: str):
+        if pic_format == 'gif':
+            obj_name = f'{obj_name}.{pic_format}'
+            self.put_in_bucket(
+                bucket_name='general',
+                obj_name=obj_name,
+            )
+        else:
+            obj_name = f'{obj_name}.{pic_format}'
+            self.put_in_bucket(
+                bucket_name=str(uid),
+                obj_name=obj_name
+            )
 
     def get_gifs(self, uid: str):
         """
@@ -57,6 +55,11 @@ class MinioHandler:
         """
         all_gifs = self.client.list_objects('general', recursive=True)
         for item in all_gifs:
-            if item.object_name.startswith(uid):
-                yield self.client.get_object('general', item)
-            pass
+            if item.object_name.startswith(str(uid)):
+                response = self.client.get_object(
+                    'general', str(item.object_name)
+                )
+                with open(f'{temp_path}\\{item.object_name}', 'wb') \
+                        as file_data:
+                    for d in response.stream(32 * 1024):
+                        file_data.write(d)
