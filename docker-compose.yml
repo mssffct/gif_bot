@@ -1,0 +1,19 @@
+version: '3'
+services:
+  db:
+    image: quay.io/minio/minio
+    container_name: minio_for_bot
+    ports:
+      - ${PORT}
+    volumes:
+      - /minio
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    restart: always
+  bot:
+    build: .
+    container_name: bot
+    restart: always
+    links:
+      - db

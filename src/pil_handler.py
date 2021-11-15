@@ -1,8 +1,12 @@
+import configparser
 import os
 
 from PIL import Image, ImageDraw, ImageFont
 
 watermark = '@give_me_gif'
+config = configparser.ConfigParser()
+config.read('../config.ini')
+temp_path = config['Path']['temp_path']
 
 
 class PictureWithText:
@@ -14,20 +18,23 @@ class PictureWithText:
         self.add_text()
 
     def add_text(self):
+        """
+        Adds picture and watermark to users picture
+        :return: changed picture
+        """
         try:
-            original = Image.open(f'../temp/{self.name}.jpg')
+            original = Image.open(f'{temp_path}/{self.name}.jpg')
             font = ImageFont.truetype(os.path.join('fonts', self.font), 20)
             drawer = ImageDraw.Draw(original)
             drawer.text((50, 50), self.text, (0, 0, 0), font=font)
             drawer.text((10, 10), watermark, (205, 205, 205))
-            self.changed = original.save(f'../temp/{self.name}.jpg')
+            self.changed = original.save(f'{temp_path}/{self.name}.jpg')
         except FileNotFoundError:
             print('File not found')
 
 
 class GifPicture:
     def __init__(self, media_group_id, uid: str):
-        self.path = '../temp/'
         self.media_group_id = media_group_id
         self.uid = uid
         self.created = []
@@ -36,9 +43,13 @@ class GifPicture:
         self.create_gif()
 
     def add_watermark(self):
-        for cur_path, directories, files in os.walk(self.path):
+        """
+        Prepares gif frames by adding watermark to each frame
+        :return: frame with watermark
+        """
+        for cur_path, directories, files in os.walk(temp_path):
             for image in files:
-                file = f'{self.path}{image}'
+                file = f'{temp_path}/{image}'
                 frame = Image.open(file)
                 drawer = ImageDraw.Draw(frame)
                 drawer.text((10, 10), watermark, (205, 205, 205))
@@ -46,9 +57,13 @@ class GifPicture:
                 self.created.append(frame)
 
     def create_gif(self):
+        """
+        Collects frames and creates gif picture
+        :return: gif picture
+        """
         try:
             self.result = self.created[0].save(
-                f'../temp/{self.uid}_{self.media_group_id}.gif',
+                f'{temp_path}/{self.uid}_{self.media_group_id}.gif',
                 save_all=True,
                 append_images=self.created[1:],
                 optimize=True,

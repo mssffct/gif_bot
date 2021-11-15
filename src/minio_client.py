@@ -1,20 +1,25 @@
-import os
+import configparser
 
 from minio import Minio
 
-temp_path = os.path.join('..', 'temp')
+config = configparser.ConfigParser()
+config.read('../config.ini')
+temp_path = config['Path']['temp_path']
 
 
 class MinioHandler:
-    def __init__(self, __access, __secret):
+    def __init__(self, __host_port, __access, __secret):
+        self.__host_port = __host_port
         self.__access = __access
         self.__secret = __secret
-        self.client = self.get_minio_client(self.__access, self.__secret)
+        self.client = self.get_minio_client(
+            self.__host_port, self.__access, self.__secret
+        )
 
     @staticmethod
-    def get_minio_client(__access, __secret):
+    def get_minio_client(__host_port, __access, __secret):
         return Minio(
-            'localhost:9000',
+            endpoint=__host_port,
             access_key=__access,
             secret_key=__secret,
             region='ru',
@@ -29,7 +34,7 @@ class MinioHandler:
         self.client.fput_object(
             bucket_name,
             f'{obj_name}',
-            file_path=f'{temp_path}\\{obj_name}',
+            file_path=f'{temp_path}/{obj_name}',
             content_type='application/csv',
         )
 
@@ -59,7 +64,7 @@ class MinioHandler:
                 response = self.client.get_object(
                     'general', str(item.object_name)
                 )
-                with open(f'{temp_path}\\{item.object_name}', 'wb') \
+                with open(f'{temp_path}/{item.object_name}', 'wb') \
                         as file_data:
                     for d in response.stream(32 * 1024):
                         file_data.write(d)

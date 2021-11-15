@@ -9,12 +9,13 @@ from src.minio_client import MinioHandler
 load_dotenv()
 MINIO_ROOT_USER = os.getenv('MINIO_ROOT_USER')
 MINIO_ROOT_PASSWORD = os.getenv('MINIO_ROOT_PASSWORD')
+HOST_PORT = os.getenv('HOST_PORT')
 temp_path = os.path.join('temp')
 
 
 @pytest.fixture()
 def minio_client():
-    return MinioHandler(MINIO_ROOT_USER, MINIO_ROOT_PASSWORD)
+    return MinioHandler(HOST_PORT, MINIO_ROOT_USER, MINIO_ROOT_PASSWORD)
 
 
 def temp_clean(path):
@@ -51,7 +52,11 @@ def test_save_function(minio_client):
     all_gifs = minio.client.list_objects('general', recursive=True)
     for item in all_gifs:
         test_list.append(item.object_name)
-    minio.save(obj_name='752272448_13095111081708074', uid='752272448', pic_format='gif')
+    minio.save(
+        obj_name='752272448_13095111081708074',
+        uid='752272448',
+        pic_format='gif'
+    )
     # Then
     assert '752272448_13095111081708074.gif' in test_list
     temp_clean(os.getcwd())

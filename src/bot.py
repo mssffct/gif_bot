@@ -1,20 +1,10 @@
-import os
 import time
 
-import telebot
-from dotenv import load_dotenv
 from telebot import types
 
+from bot_handlers import (bot, get_gifs_command_handler, gif_creator, gif_sender,
+                          text_to_picture_handler)
 from keyboards import font_keyboard, main_keyboard
-from minio_client import MinioHandler
-from pil_handler import GifPicture, PictureWithText
-
-load_dotenv()
-TOKEN = os.getenv('TELEGRAM_TOKEN')
-MINIO_ACCESS = os.getenv('MINIO_ROOT_USER')
-MINIO_SECRET = os.getenv('MINIO_ROOT_PASSWORD')
-temp_path = os.path.join('..', 'temp')
-bot = telebot.TeleBot(TOKEN)
 
 
 @bot.message_handler(commands=['start'])
@@ -47,17 +37,7 @@ def help_command(message):
 
 @bot.message_handler(commands=['get_gifs'])
 def get_gifs_command(message):
-    global temp_path
-    uid = message.from_user.id
-    minio.get_gifs(uid)
-    for gif in os.listdir(temp_path):
-        io_file = open(f'{temp_path}\\{gif}', 'rb')
-        bot.send_document(
-            message.from_user.id,
-            io_file
-        )
-        io_file.close()
-    temp_clean()
+    get_gifs_command_handler(message)
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -110,27 +90,9 @@ def choose_font(message, text):
 
 
 def create_picture(message, text: str, font: str):
-    global temp_path
     try:
         if message.media_group_id is None and message.content_type == 'photo':
-            picture_info = bot.get_file(message.photo[-1].file_id)
-            path = f'{temp_path}\\{picture_info.file_unique_id}.jpg'
-            picture_file = bot.download_file(picture_info.file_path)
-            with open(path, 'wb') as new_file:
-                new_file.write(picture_file)
-            PictureWithText(f'{picture_info.file_unique_id}', text, font)
-            photo = open(path, 'rb')
-            bot.send_photo(
-                message.from_user.id,
-                photo
-            )
-            photo.close()
-            minio.save(
-                uid=message.from_user.id,
-                obj_name=f'{picture_info.file_unique_id}',
-                pic_format='jpg'
-            )
-            os.remove(f'{temp_path}\\{picture_info.file_unique_id}.jpg')
+            text_to_picture_handler(message, text, font)
     except TypeError:
         bot.send_message(
             message.from_user.id,
@@ -141,15 +103,9 @@ def create_picture(message, text: str, font: str):
 
 @bot.message_handler(content_types=['photo'])
 def create_gif(message):
-    global temp_path
     try:
         if message.media_group_id is not None:
-            picture_info = bot.get_file(message.photo[-1].file_id)
-            path = f'{temp_path}\\{picture_info.file_unique_id}.jpg'
-            picture_file = bot.download_file(picture_info.file_path)
-            with open(path, 'wb') as new_file:
-                new_file.write(picture_file)
-            GifPicture(message.media_group_id, message.from_user.id)
+            gif_creator(message)
         else:
             bot.send_message(
                 message.from_user.id,
@@ -161,33 +117,12 @@ def create_gif(message):
 
 
 def send_gif(message):
-    global temp_path
     time.sleep(10)
     try:
-        file = f'{message.from_user.id}_{message.media_group_id}'
-        io_file = open(f'{temp_path}\\{file}.gif', 'rb')
-        bot.send_document(
-            message.from_user.id,
-            io_file
-        )
-        io_file.close()
-        minio.save(
-            uid=message.from_user.id,
-            obj_name=file,
-            pic_format='gif'
-        )
-        temp_clean()
+        gif_sender(message)
     except FileNotFoundError:
         bot.register_next_step_handler(message, send_gif)
 
 
-def temp_clean():
-    global temp_path
-    for file in os.listdir(temp_path):
-        file_path = os.path.join(temp_path, file)
-        os.remove(file_path)
-
-
 if __name__ == '__main__':
-    minio = MinioHandler(MINIO_ACCESS, MINIO_SECRET)
     bot.infinity_polling(timeout=10)
