@@ -2,8 +2,8 @@ import time
 
 from telebot import types
 
-from bot_handlers import (bot, get_gifs_command_handler, gif_creator, gif_sender,
-                          text_to_picture_handler)
+from bot_handlers import (bot, get_gifs_command_handler, gif_creator,
+                          gif_sender, text_to_picture_handler)
 from keyboards import font_keyboard, main_keyboard
 
 
@@ -77,10 +77,16 @@ def wait_for_text(message):
 
 def choose_font(message, text):
     font = ''
+    dict_fonts = {'Lobster': 'Lobster-Regular.ttf'}
+    font = dict_fonts.get(message.text)
     if message.text == 'Lobster':
         font = 'Lobster-Regular.ttf'
     elif message.text == 'Comfortaa':
         font = 'Comfortaa-Medium.ttf'
+    elif message.text == 'Comfortaa2':
+        font = 'Comfortaa-Medium2.ttf'
+    elif message.text == 'Comfortaa3':
+        font = 'Comfortaa-Medium3.ttf'
     bot.send_message(
         message.from_user.id,
         'And now, add picture you want ',

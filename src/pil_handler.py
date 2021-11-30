@@ -5,8 +5,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 watermark = '@give_me_gif'
 config = configparser.ConfigParser()
-config.read('../config.ini')
+config.read('config.ini')
 temp_path = config['Path']['temp_path']
+font_path = config['Path']['font_path']
 
 
 class PictureWithText:
@@ -24,7 +25,7 @@ class PictureWithText:
         """
         try:
             original = Image.open(f'{temp_path}/{self.name}.jpg')
-            font = ImageFont.truetype(os.path.join('fonts', self.font), 20)
+            font = ImageFont.truetype(os.path.join(font_path, self.font), 20)
             drawer = ImageDraw.Draw(original)
             drawer.text((50, 50), self.text, (0, 0, 0), font=font)
             drawer.text((10, 10), watermark, (205, 205, 205))

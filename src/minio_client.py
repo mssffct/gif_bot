@@ -3,25 +3,25 @@ import configparser
 from minio import Minio
 
 config = configparser.ConfigParser()
-config.read('../config.ini')
+config.read('config.ini')
 temp_path = config['Path']['temp_path']
 
 
 class MinioHandler:
-    def __init__(self, __host_port, __access, __secret):
-        self.__host_port = __host_port
-        self.__access = __access
-        self.__secret = __secret
+    def __init__(self, host_port: str, access: str, secret: str):
+        self.host_port = host_port
+        self.access = access
+        self.secret = secret
         self.client = self.get_minio_client(
-            self.__host_port, self.__access, self.__secret
+            self.host_port, self.access, self.secret
         )
 
     @staticmethod
-    def get_minio_client(__host_port, __access, __secret):
+    def get_minio_client(host_port: str, access: str, secret: str):
         return Minio(
-            endpoint=__host_port,
-            access_key=__access,
-            secret_key=__secret,
+            endpoint=host_port,
+            access_key=access,
+            secret_key=secret,
             region='ru',
             secure=False
         )
@@ -62,7 +62,7 @@ class MinioHandler:
         for item in all_gifs:
             if item.object_name.startswith(str(uid)):
                 response = self.client.get_object(
-                    'general', str(item.object_name)
+                    'general', item.object_name
                 )
                 with open(f'{temp_path}/{item.object_name}', 'wb') \
                         as file_data:

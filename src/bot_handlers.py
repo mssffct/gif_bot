@@ -1,7 +1,7 @@
 import configparser
 import os
-import telebot
 
+import telebot
 from dotenv import load_dotenv
 
 from minio_client import MinioHandler
@@ -13,7 +13,7 @@ MINIO_ROOT_PASSWORD = os.getenv('MINIO_ROOT_PASSWORD')
 HOST_PORT = os.getenv('HOST_PORT')
 TOKEN = os.getenv('TELEGRAM_TOKEN')
 config = configparser.ConfigParser()
-config.read('../config.ini')
+config.read('config.ini')
 temp_path = config['Path']['temp_path']
 
 bot = telebot.TeleBot(TOKEN)
